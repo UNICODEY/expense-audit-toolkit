@@ -57,10 +57,7 @@ if __name__ == "__main__":
     from detectors.conflict import detect_time_location_conflicts
     from detectors.statistical import detect_group_outliers, detect_threshold_clustering, detect_frequency_anomaly
     from detectors.trip_chain import detect_broken_trip_chains
-    from detectors.receipt_cross_check import batch_cross_check
     from detectors.advanced_patterns import detect_co_occurrence_pattern, detect_amount_precision_anomaly
-    from detectors.missing_receipt import detect_missing_receipts
-    from ocr.field_extractor import ReceiptFields
 
     travel_df = pd.read_csv("data/mock_travel_timeline.csv")
     expense_df = pd.read_csv("data/mock_expenses.csv")
@@ -75,23 +72,14 @@ if __name__ == "__main__":
     co_occur = detect_co_occurrence_pattern(advanced_df)
     precision_anomaly = detect_amount_precision_anomaly(advanced_df)
 
-    # OCR交叉验证 + 缺失票据检测:实际使用时,这里的 mock_ocr_results 应该替换成
-    # 批量跑完 ocr/batch_process.py 后,按单号整理出的真实 ReceiptFields 字典
-    mock_expense_with_orders = pd.DataFrame([
-        {"单号": "R001", "人": "销售_员工1", "金额": 1580.00, "日期": "2026-02-12"},
-        {"单号": "R002", "人": "研发_员工2", "金额": 1580.00, "日期": "2026-02-12"},
-        {"单号": "R003", "人": "行政_员工1", "金额": 320.00, "日期": "2026-02-15"},  # 故意不给这条配票据,演示缺失票据检测
-    ])
-    mock_ocr_results = {
-        "R001": ReceiptFields(amounts=[1580.00], dates=["2026-02-12"]),
-        "R002": ReceiptFields(amounts=[800.0], dates=["2026-02-12"]),
-    }
-    receipt_issues = batch_cross_check(mock_expense_with_orders, mock_ocr_results)
-    missing_receipts = detect_missing_receipts(mock_expense_with_orders, mock_ocr_results)
+    # OCR交叉验证 + 缺失票据检测:全自动版本,直接读两份CSV做比对
+    # 实际使用时,把这两个路径换成: 真实报销记录.csv 和 ocr/batch_process.py 生成的结果csv
+    from detectors.receipt_cross_check import cross_check_from_csv
+    receipt_issues = cross_check_from_csv("data/mock_receipt_expense.csv", "data/mock_receipt_ocr_result.csv")
 
     result = aggregate_scores(
         conflicts, outliers, clustered, freq, broken_chains,
-        receipt_issues, co_occur, precision_anomaly, missing_receipts,
+        receipt_issues, co_occur, precision_anomaly,
     )
 
     print("=" * 70)

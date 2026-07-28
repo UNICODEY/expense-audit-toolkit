@@ -12,6 +12,49 @@ import pandas as pd
 from ocr.field_extractor import ReceiptFields
 
 
+def cross_check_from_csv(expense_csv_path: str, ocr_result_csv_path: str, amount_tolerance: float = 1.0) -> pd.DataFrame:
+    """
+    全自动版本:直接读取两份CSV做交叉验证,不需要手动写代码构造字典。
+
+    expense_csv_path: 报销记录表,需包含 单号/人/金额/日期 列
+    ocr_result_csv_path: ocr/batch_process.py 批量处理后生成的结果CSV,
+                          已经自带 单号/金额/日期/商户 列,可以直接用
+
+    用法(处理完票据图片后,只需两步):
+        1. python ocr/batch_process.py 图片文件夹 receipts_result.csv
+        2. python -c "from detectors.receipt_cross_check import cross_check_from_csv;
+                       print(cross_check_from_csv('data/真实报销记录.csv', 'receipts_result.csv'))"
+    """
+    expense_df = pd.read_csv(expense_csv_path)
+    ocr_df = pd.read_csv(ocr_result_csv_path)
+
+    # 按单号合并两张表,只保留报销记录里有、但OCR结果里也存在的部分做金额/日期比对
+    merged = expense_df.merge(
+        ocr_df[["单号", "金额", "日期"]],
+        on="单号", how="left", suffixes=("_申报", "_票据"),
+    )
+
+    all_flags = []
+    for _, row in merged.iterrows():
+        order_no = row["单号"]
+
+        if pd.isna(row["金额_票据"]):
+            all_flags.append({"人": row["人"], "单号": order_no, "异常类型": "缺失票据",
+                               "详情": f"报销记录[{order_no}]在OCR结果中找不到对应票据"})
+            continue
+
+        diff = abs(row["金额_票据"] - row["金额_申报"])
+        if diff > amount_tolerance:
+            all_flags.append({"人": row["人"], "单号": order_no, "异常类型": "发票金额与申报金额不符",
+                               "详情": f"申报{row['金额_申报']},票据识别{row['金额_票据']},相差{diff:.2f}"})
+
+        if pd.notna(row.get("日期_票据")) and str(row["日期_票据"]) != str(row["日期_申报"]):
+            all_flags.append({"人": row["人"], "单号": order_no, "异常类型": "发票日期与申报日期不符",
+                               "详情": f"申报{row['日期_申报']},票据识别{row['日期_票据']}"})
+
+    return pd.DataFrame(all_flags)
+
+
 def cross_check_receipt(claimed_amount: float, claimed_date: str,
                          ocr_fields: ReceiptFields, amount_tolerance: float = 1.0) -> list[dict]:
     """
@@ -87,16 +130,16 @@ if __name__ == "__main__":
     from dataclasses import dataclass
 
     mock_expense_records = pd.DataFrame([
-        {"单号": "R001", "人": "销售_员工1", "金额": 1580.00, "日期": "2026-02-12"},
-        {"单号": "R002", "人": "研发_员工2", "金额": 1580.00, "日期": "2026-02-12"},
+        {"单号": "R001", "人": "销售_员工1", "金额": 888.00, "日期": "2026-05-20"},
+        {"单号": "R002", "人": "研发_员工2", "金额": 888.00, "日期": "2026-05-20"},
     ])
 
-    # 模拟票据OCR结果: R001一致,R002金额被虚报(票据实际只有800,却申报了1580)
+    # 模拟票据OCR结果: R001一致,R002金额被虚报(票据实际只有650,却申报了888)
     mock_ocr_results = {
-        "R001": ReceiptFields(amounts=[1564.36, 15.64, 1580.00], dates=["2026-02-12"],
-                               merchant_candidates=["福州市台江区某餐厅"]),
-        "R002": ReceiptFields(amounts=[790.0, 800.0], dates=["2026-02-12"],
-                               merchant_candidates=["福州市某餐厅"]),
+        "R001": ReceiptFields(amounts=[876.60, 8.76, 888.00], dates=["2026-05-20"],
+                               merchant_candidates=["示例市示例区某餐厅"]),
+        "R002": ReceiptFields(amounts=[790.0, 800.0], dates=["2026-05-20"],
+                               merchant_candidates=["示例市某餐厅"]),
     }
 
     result = batch_cross_check(mock_expense_records, mock_ocr_results)
