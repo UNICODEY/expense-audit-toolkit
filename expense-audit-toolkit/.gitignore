@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# 防止真实数据被误传:凡是不叫 mock_ 开头的 csv,一律忽略
+data/*.csv
+!data/mock_*.csv
+
+# 反馈日志包含真实复核记录,不应上传
+detectors/feedback_log.csv
