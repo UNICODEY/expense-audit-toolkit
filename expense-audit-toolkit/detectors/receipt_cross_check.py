@@ -1,12 +1,11 @@
 """
 OCR交叉验证模块
 把票据OCR识别出的字段(金额/日期),跟员工申报的报销记录做比对,
-找出"申报信息"和"票据实际内容"不一致的情况 —— 这是最直接的造假信号之一。
+找出"申报信息"和"票据实际内容"不一致的情况。
 
-推荐用法(全自动,两步完成,不需要手写任何胶水代码):
-    1. python ocr/batch_process.py 图片文件夹 receipts_result.csv
-    2. from detectors.receipt_cross_check import cross_check_from_csv
-       cross_check_from_csv("真实报销记录.csv", "receipts_result.csv")
+1. python ocr/batch_process.py 图片文件夹 receipts_result.csv
+2. from detectors.receipt_cross_check import cross_check_from_csv
+    cross_check_from_csv("真实报销记录.csv", "receipts_result.csv")
 """
 
 import pandas as pd
