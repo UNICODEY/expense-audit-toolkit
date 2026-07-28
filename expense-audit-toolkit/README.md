@@ -28,8 +28,7 @@ expense-audit-toolkit/
 │   ├── conflict.py                    # 规则: 时间-地点冲突检测
 │   ├── trip_chain.py                  # 规则: 单号关联行程链断裂检测
 │   ├── statistical.py                 # 规则: 统计异常(离群点/阈值卡点/频率异常)
-│   ├── receipt_cross_check.py         # 规则: OCR票据与申报记录交叉验证
-│   ├── missing_receipt.py             # 规则: 缺失票据检测
+│   ├── receipt_cross_check.py         # 规则: OCR票据与申报记录交叉验证(含缺失票据检测)
 │   ├── advanced_patterns.py           # 规则: 结伴报销模式 / 金额精确度异常
 │   ├── feedback.py                    # 权重调优反馈闭环:记录复核结果,统计规则准确率
 │   ├── rule_weights.json              # 各规则权重配置(可直接编辑调整,不用改代码)
