@@ -1,5 +1,27 @@
 # Expense Audit Toolkit
 
+## English Overview
+
+A local expense-audit toolkit that combines deterministic rules, statistical checks, and OCR to detect inconsistencies in reimbursement records. The system is designed to help reviewers rank high-risk records rather than replace human judgement.
+
+### What it does
+
+- Cross-checks receipt amounts and dates against submitted reimbursement records
+- Detects hard conflicts such as impossible time and location combinations
+- Checks broken travel chains and unusual co-travel reimbursement patterns
+- Flags statistical anomalies such as outliers, threshold clustering, unusual frequency, and suspicious amount precision
+- Uses local PaddleOCR for receipt extraction and cross-checking
+- Combines signals into one weighted review queue instead of producing separate alert lists
+- Records reviewer feedback so the empirical accuracy of each rule can be tracked and weights can be recalibrated over time
+
+### Design choices
+
+The core detection logic uses rules and statistical methods because audit findings need to be interpretable and reproducible. The same input should produce the same output, and each flag should have a clear reason. OCR runs locally. An LLM is considered only as an optional fallback for non-standard receipt extraction or note analysis and is not part of the current implementation.
+
+All data in this repository is synthetic. The project contains no real company, employee, or reimbursement data. Any use with real records should remain in a local environment and should not upload sensitive data to external APIs or AI services.
+
+---
+
 一个基于规则+统计方法+OCR的报销行为一致性检测工具包。用于识别报销记录中的逻辑矛盾、统计异常、以及票据与申报不符的情况,辅助审计人员优先排查高风险记录。
 
 ⚠️ **本项目所有数据均为虚构模拟数据,不包含任何真实公司或个人信息,仅用于演示检测逻辑。**
@@ -41,7 +63,7 @@ expense-audit-toolkit/
 └── README.md
 ```
 
-## 已实现的检测规则(9条)
+## 已实现的检测规则
 
 | 规则 | 类型 | 默认权重 |
 |---|---|---|
@@ -71,7 +93,7 @@ python data/generate_mock_travel.py
 python data/generate_mock_linked_trips.py
 python data/generate_mock_advanced.py
 
-# 运行综合评分(默认用模拟数据演示全部9条规则)
+# 运行综合评分(默认用模拟数据演示全部检测规则)
 python detectors/scoring.py
 ```
 
